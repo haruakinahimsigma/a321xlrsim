@@ -22,6 +22,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 .dock-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border-bottom:1px solid var(--line)}.dock-title{font-size:11px;font-weight:850;letter-spacing:.13em}.dock-sub{color:var(--muted);font-size:10px;margin-left:9px}.dock-head button{border:1px solid var(--line);background:#142531;border-radius:7px;padding:6px 9px;font-size:11px}
 .controls{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:9px;padding:11px}.control{min-width:0;background:#0b1822;border:1px solid #29404d;border-radius:10px;padding:10px;text-align:left;transition:border-color .15s,background .15s}.control:active{transform:translateY(1px)}.control .kicker{font-size:9px;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:8px}.control strong{font-size:12px;display:block}.control .state{font-size:10px;display:block;margin-top:6px;color:var(--amber)}.control.on{border-color:#3b8e70;background:#10251f}.control.on .state{color:var(--green)}.control:disabled{opacity:.38;cursor:not-allowed}
 .dock-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px 10px;color:var(--muted);font-size:10px}.reset{border:0;background:transparent;color:#b4c8d3;text-decoration:underline;padding:4px}
+.viewbar{position:fixed;z-index:5;left:12px;top:88px;display:flex;align-items:center;gap:5px;padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(14px);box-shadow:0 8px 28px #0005}.viewbar .view-label{font-size:9px;letter-spacing:.1em;color:var(--muted);padding:0 5px}.viewbtn{border:1px solid transparent;background:#142531;border-radius:7px;padding:7px 10px;font-size:10px;font-weight:800}.viewbtn.active{background:#123442;border-color:#3c8192;color:var(--cyan)}.viewbtn.locked{background:#153326;border-color:#3b8e70;color:var(--green)}.viewstatus{font-size:9px;color:var(--muted);padding:0 5px;white-space:nowrap}.viewcal{position:fixed;z-index:5;left:12px;top:137px;max-width:min(340px,calc(100vw - 24px));display:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;backdrop-filter:blur(14px);box-shadow:0 8px 28px #0005;font-size:11px;color:#c1d4dd}.viewcal.show{display:block}.viewcal button{margin-left:8px;border:1px solid var(--line);background:#142531;border-radius:7px;padding:5px 8px;font-size:10px}@media(max-width:760px){.viewbar{left:8px;top:70px;gap:3px;padding:4px}.viewbtn{padding:7px 8px;font-size:9px}.viewbar .view-label{display:none}.viewstatus{font-size:8px}.viewcal{left:8px;top:116px}}
 #notice{position:fixed;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%);background:#0a1722;border:1px solid #3b6170;border-radius:12px;padding:16px 18px;max-width:min(360px,90vw);box-shadow:0 20px 60px #0009;display:none}#notice.show{display:block}#notice strong{display:block;margin-bottom:5px;color:var(--cyan)}#notice p{margin:0;color:#b5c8d2;font-size:12px}
 .collapsed .controls,.collapsed .dock-foot{display:none}.collapsed .dock-head{border:0}
 .ecam-hidden{opacity:0;pointer-events:none;transform:translate(12px,-50%)}
@@ -31,7 +32,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 </head>
 <body>
 <div id="viewer">
-<iframe id="sketchfab" title="Airbus A320 cockpit 3D model by AirStudios on Sketchfab" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" src="https://sketchfab.com/models/feaa475ce5824121be0380a42987007f/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=1&ui_hint=0&ui_controls=1&ui_stop=0&ui_inspector=0"></iframe>
+<iframe id="sketchfab" title="Airbus A320 cockpit 3D model by AirStudios on Sketchfab" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" src=""></iframe>
 </div>
 <div class="scrim"></div>
 <header class="topbar">
@@ -39,7 +40,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
   <div class="status"><span><i class="led" id="powerLed"></i><span id="powerText">ELEC OFF</span></span><span id="apuTop">APU OFF</span></div>
   <div class="top-actions"><button class="iconbtn" id="ecamToggle" aria-label="Toggle ECAM panel">ECAM</button><button class="iconbtn" id="fullBtn" aria-label="Toggle fullscreen">⛶</button></div>
 </header>
-<div class="hint">Drag to look around · pinch / scroll to zoom · use the system controls below</div>
+<div class="hint" id="hint">Camera API loading · use CAPT / CENTER / FO to switch viewpoints</div>
+<nav class="viewbar" aria-label="Cockpit camera presets"><span class="view-label">CAMERA</span><button class="viewbtn active" data-view="CAPT">CAPT</button><button class="viewbtn" data-view="CENTER">CENTER</button><button class="viewbtn" data-view="FO">FO</button><button class="viewbtn" id="saveView">SAVE VIEW</button><button class="viewbtn locked" id="lockView">🔒 LOCKED</button><span class="viewstatus" id="viewStatus">API LOADING…</span></nav>
+<div class="viewcal" id="viewcal">Move the camera to the <b id="calTarget">CENTER</b> seat, then save that view. <button id="calDismiss">Got it</button></div>
 <aside class="ecam" id="ecam">
   <div class="panel-head"><span>ECAM · SYSTEM STATUS</span><span class="tag">SIM</span></div>
   <div class="ecam-body">
@@ -76,11 +79,99 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
   <div class="dock-foot"><span>Prototype only · not for real-world flight training</span><button class="reset" id="helpBtn">How this works</button></div>
 </section>
 <div id="notice"><strong id="noticeTitle">Prototype note</strong><p id="noticeText"></p></div>
+<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
 <script>
 (function(){
+ const $=id=>document.getElementById(id);
+
+ // Sketchfab Viewer API camera controls. The model's exact seat coordinates are
+ // not exposed to this page, so the initial view is used as a starting preset.
+ const MODEL_UID='feaa475ce5824121be0380a42987007f';
+ const iframe=$('sketchfab');
+ const cameraPresets={};
+ let viewerApi=null, activeView='CAPT', cameraLocked=true, cameraReady=false;
+ try {
+   const saved=JSON.parse(localStorage.getItem('a321xlrsim-camera-presets')||'{}');
+   ['CAPT','CENTER','FO'].forEach(k=>{if(saved[k]&&saved[k].position&&saved[k].target)cameraPresets[k]=saved[k]});
+ } catch(e) {}
+ function updateCameraUI(){
+   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===activeView));
+   $('lockView').textContent=cameraLocked?'🔒 LOCKED':'🔓 UNLOCKED';
+   $('lockView').classList.toggle('locked',cameraLocked);
+   $('viewStatus').textContent=!cameraReady?'API UNAVAILABLE':cameraLocked?'VIEW LOCKED':'VIEW FREE';
+   $('hint').textContent=!cameraReady?'Viewer API unavailable · 3D model fallback mode':cameraLocked?'Camera locked · choose CAPT / CENTER / FO':'Camera unlocked · position view, then SAVE VIEW';
+ }
+ function persistPresets(){try{localStorage.setItem('a321xlrsim-camera-presets',JSON.stringify(cameraPresets))}catch(e){}}
+ function getCurrentCamera(cb){
+   if(!viewerApi||!cameraReady){say('CAMERA API UNAVAILABLE','Sketchfab camera presets need the Viewer API. You can still use the model’s own viewer controls.');return}
+   viewerApi.getCameraLookAt(function(err,camera){if(err||!camera){say('CAMERA READ FAILED','Could not read the current camera position from Sketchfab.');return}cb(camera)});
+ }
+ function chooseView(view){
+   activeView=view;
+   updateCameraUI();
+   if(!viewerApi||!cameraReady){say('CAMERA PRESETS UNAVAILABLE','The embedded model is running without camera API access.');return}
+   const preset=cameraPresets[view];
+   if(!preset){$('calTarget').textContent=view;$('viewcal').classList.add('show');say('VIEW NOT CALIBRATED',view+' has no saved camera position yet. Unlock the camera, position it at that seat, then tap SAVE VIEW.');return}
+   cameraLocked=true;
+   viewerApi.setUserInteraction(false,function(){});
+   viewerApi.setCameraLookAt(preset.position,preset.target,1.1,function(err){
+     if(err){say('CAMERA MOVE FAILED','Sketchfab could not move to the saved '+view+' view.');return}
+     updateCameraUI();
+   });
+ }
+ function saveCurrentView(){
+   if(!viewerApi||!cameraReady){say('CAMERA API UNAVAILABLE','Camera positions can only be saved when the Sketchfab Viewer API is connected.');return}
+   getCurrentCamera(function(camera){
+     cameraPresets[activeView]={position:camera.position,target:camera.target};
+     persistPresets();
+     $('viewcal').classList.remove('show');
+     updateCameraUI();
+     say('VIEW SAVED',activeView+' camera position saved in this browser. Switch to '+activeView+' any time.');
+   });
+ }
+ document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>chooseView(b.dataset.view)));
+ $('saveView').addEventListener('click',saveCurrentView);
+ $('lockView').addEventListener('click',function(){
+   if(!viewerApi||!cameraReady){say('CAMERA API UNAVAILABLE','Camera locking needs the Sketchfab Viewer API.');return}
+   cameraLocked=!cameraLocked;
+   viewerApi.setUserInteraction(!cameraLocked,function(err){if(err){cameraLocked=!cameraLocked;say('CAMERA LOCK FAILED','Sketchfab did not accept the interaction setting.');}updateCameraUI()});
+ });
+ $('calDismiss').addEventListener('click',()=>$('viewcal').classList.remove('show'));
+ function fallbackViewer(){
+   if(cameraReady)return;
+   iframe.src='https://sketchfab.com/models/'+MODEL_UID+'/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=1&ui_hint=0&ui_controls=1&ui_stop=0&ui_inspector=0';
+   $('viewStatus').textContent='EMBED MODE';
+   $('hint').textContent='Embed mode · camera presets require Viewer API access';
+ }
+ if(window.Sketchfab){
+   try{
+     const client=new Sketchfab('1.12.1',iframe);
+     client.init(MODEL_UID,{
+       autostart:1,ui_theme:'dark',ui_infos:0,ui_watermark:1,ui_hint:0,ui_controls:1,ui_stop:0,ui_inspector:0,
+       success:function(api){
+         viewerApi=api;
+         api.start();
+         api.addEventListener('viewerready',function(){
+           cameraReady=true;
+           api.getCameraLookAt(function(err,camera){
+             if(!err&&camera&&!cameraPresets.CAPT){cameraPresets.CAPT={position:camera.position,target:camera.target};persistPresets()}
+             updateCameraUI();
+             // Lock the starting view. The exact captain-seat framing must be calibrated manually.
+             cameraLocked=true;
+             api.setUserInteraction(false,function(){});
+             updateCameraUI();
+           });
+         });
+       },
+       error:function(){fallbackViewer();updateCameraUI()}
+     });
+   }catch(e){fallbackViewer()}
+ }else{fallbackViewer()}
+ const apiScript=document.querySelector('script[src*="sketchfab-viewer-1.12.1.js"]');
+ if(apiScript)apiScript.addEventListener('error',fallbackViewer);
+
  const state={bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,apuBleed:false,xfeed:"AUTO",engMode:"NORM",irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0};
  let alignTimer=null,apuTimer=null,noticeTimer=null;
- const $=id=>document.getElementById(id);
  function powered(){return state.bat1||state.bat2||state.ext||state.apuAvailable}
  function say(title,msg){$('noticeTitle').textContent=title;$('noticeText').textContent=msg;$('notice').classList.add('show');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('notice').classList.remove('show'),3600)}
  function toggle(key){
