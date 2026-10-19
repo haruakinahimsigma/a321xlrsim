@@ -62,6 +62,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
     <button class="control" id="ext" data-key="ext"><span class="kicker">GROUND POWER</span><strong>EXT PWR</strong><span class="state">NOT AVAIL</span></button>
     <button class="control" id="apuMaster" data-key="apuMaster"><span class="kicker">AUX POWER</span><strong>APU MASTER</strong><span class="state">OFF</span></button>
     <button class="control" id="apuStart" data-key="apuStart"><span class="kicker">AUX POWER</span><strong>APU START</strong><span class="state">STANDBY</span></button>
+    <button class="control" id="apuBleed" data-key="apuBleed"><span class="kicker">PNEUMATICS</span><strong>APU BLEED</strong><span class="state">OFF</span></button>
+    <button class="control" id="xfeed" data-key="xfeed"><span class="kicker">FUEL</span><strong>X FEED</strong><span class="state">AUTO</span></button>
+    <button class="control" id="engMode" data-key="engMode"><span class="kicker">ENGINE</span><strong>ENG MODE</strong><span class="state">NORM</span></button>
     <button class="control" id="irs1" data-key="irs1"><span class="kicker">ADIRS</span><strong>IRS 1</strong><span class="state">OFF</span></button>
     <button class="control" id="irs2" data-key="irs2"><span class="kicker">ADIRS</span><strong>IRS 2</strong><span class="state">OFF</span></button>
     <button class="control" id="irs3" data-key="irs3"><span class="kicker">ADIRS</span><strong>IRS 3</strong><span class="state">OFF</span></button>
@@ -75,7 +78,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 <div id="notice"><strong id="noticeTitle">Prototype note</strong><p id="noticeText"></p></div>
 <script>
 (function(){
- const state={bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0};
+ const state={bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,apuBleed:false,xfeed:"AUTO",engMode:"NORM",irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0};
  let alignTimer=null,apuTimer=null,noticeTimer=null;
  const $=id=>document.getElementById(id);
  function powered(){return state.bat1||state.bat2||state.ext||state.apuAvailable}
@@ -83,6 +86,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
  function toggle(key){
   if(key==='reset'){reset();return}
   if(key==='ecamPage'){state.ecamPage=(state.ecamPage+1)%3;render();return}
+  if(key==='xfeed'){state.xfeed=state.xfeed==='AUTO'?'SHUT':state.xfeed==='SHUT'?'OPEN':'AUTO';render();return}
+  if(key==='engMode'){state.engMode=state.engMode==='NORM'?'IGN/START':'NORM';render();return}
+  if(key==='apuBleed'){if(!state.apuAvailable){say('APU BLEED INHIBITED','The APU must be available before its bleed air can be selected in this simplified model.');return}state.apuBleed=!state.apuBleed;render();return}
   if(key==='apuStart'){
    if(!state.apuMaster){say('APU START INHIBITED','Switch APU MASTER on first. This is a simplified educational simulation.');return}
    if(!powered()){say('ELECTRICAL POWER REQUIRED','Enable a battery or external power first.');return}
@@ -90,21 +96,22 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
    state.apuStart=true;render();clearTimeout(apuTimer);apuTimer=setTimeout(()=>{state.apuAvailable=true;state.apuStart=false;render();say('APU AVAILABLE','Simulated APU start complete.');},3200);render();return;
   }
   if(key.startsWith('irs')&&!powered()){say('ADIRS NOT POWERED','Enable electrical power before switching on the IRS units.');return}
-  if(key.startsWith('eng')&&!powered()&&!state.apuAvailable){say('ENGINE START INHIBITED','Enable electrical power first. This prototype does not model real engine-start conditions.');return}
+  if(key.startsWith('eng')){if(!powered()){say('ENGINE START INHIBITED','Electrical power is required in this demo.');return}if(!state.apuAvailable||!state.apuBleed){say('ENGINE START INHIBITED','For this demo sequence: start the APU, wait for APU AVAIL, then switch APU BLEED on.');return}if(state.xfeed==='SHUT'){say('ENGINE START INHIBITED','X FEED is SHUT. Select AUTO or OPEN in this simplified model.');return}if(state.engMode!=='IGN/START'){say('ENGINE START INHIBITED','Set ENG MODE to IGN/START before selecting an engine start.');return}if(state[key]){state[key]=false;render();return}state[key]=true;render();say('ENGINE START','Engine state set to simulated running. Set ENG MODE back to NORM after the start sequence.');return}
   if(key==='ext'&&!powered()&&!state.bat1&&!state.bat2){state.ext=!state.ext;render();return}
   state[key]=!state[key];
-  if(key==='apuMaster'&&!state.apuMaster){state.apuStart=false;state.apuAvailable=false;clearTimeout(apuTimer)}
+  if(key==='apuMaster'&&!state.apuMaster){state.apuStart=false;state.apuAvailable=false;state.apuBleed=false;clearTimeout(apuTimer)}
+  if(key==='apuBleed'&&!state.apuAvailable)state.apuBleed=false
   if(key.startsWith('irs')){
    clearTimeout(alignTimer);
    if(state.irs1||state.irs2||state.irs3){alignTimer=setTimeout(()=>{say('ADIRS','Alignment time elapsed in the simplified demo.');},5000)}
   }
   render();
  }
- function reset(){Object.assign(state,{bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0});clearTimeout(apuTimer);clearTimeout(alignTimer);render();say('COLD & DARK','Simulation reset to its initial state.')}
- const labels={bat1:'BAT 1',bat2:'BAT 2',ext:'EXT PWR',apuMaster:'APU MASTER',apuStart:'APU START',irs1:'IRS 1',irs2:'IRS 2',irs3:'IRS 3',eng1:'ENG 1',eng2:'ENG 2',ecamPage:'ECAM PAGE'};
+ function reset(){Object.assign(state,{bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,apuBleed:false,xfeed:"AUTO",engMode:"NORM",irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0});clearTimeout(apuTimer);clearTimeout(alignTimer);render();say('COLD & DARK','Simulation reset to its initial state.')}
+ const labels={bat1:'BAT 1',bat2:'BAT 2',ext:'EXT PWR',apuMaster:'APU MASTER',apuStart:'APU START',apuBleed:'APU BLEED',xfeed:'X FEED',engMode:'ENG MODE',irs1:'IRS 1',irs2:'IRS 2',irs3:'IRS 3',eng1:'ENG 1',eng2:'ENG 2',ecamPage:'ECAM PAGE'};
  function setRead(id,value,good){$(id).textContent=value;$(id).className=good?'green':(value==='OFF'||value==='NOT AVAIL'?'amber':'cyan')}
  function render(){
-  document.querySelectorAll('.control[data-key]').forEach(btn=>{const k=btn.dataset.key;if(k==='reset')return;const active=!!state[k];btn.classList.toggle('on',active);const s=btn.querySelector('.state');if(k==='ext')s.textContent=state.ext?'ON · CONNECTED':'NOT AVAIL';else if(k==='apuStart')s.textContent=state.apuAvailable?'AVAILABLE':state.apuStart?'STARTING…':'STANDBY';else if(k==='ecamPage')s.textContent=['STATUS','ELEC','ADIRS'][state.ecamPage];else s.textContent=active?'ON':'OFF';});
+  document.querySelectorAll('.control[data-key]').forEach(btn=>{const k=btn.dataset.key;if(k==='reset')return;const active=typeof state[k]==='boolean'?state[k]:(k==='xfeed'?state.xfeed!=='SHUT':state.engMode==='IGN/START');btn.classList.toggle('on',active);const s=btn.querySelector('.state');if(k==='ext')s.textContent=state.ext?'ON · CONNECTED':'NOT AVAIL';else if(k==='apuStart')s.textContent=state.apuAvailable?'AVAILABLE':state.apuStart?'STARTING…':'STANDBY';else if(k==='apuBleed')s.textContent=state.apuBleed?'ON · AIR SUPPLY':'OFF';else if(k==='xfeed')s.textContent=state.xfeed;else if(k==='engMode')s.textContent=state.engMode;else if(k==='ecamPage')s.textContent=['STATUS','ELEC','ADIRS'][state.ecamPage];else if(k.startsWith('irs'))s.textContent=active?'NAV · ALIGNING':'OFF';else s.textContent=active?'ON':'OFF';});
   const p=powered();$('powerLed').style.background=p?'var(--green)':'var(--red)';$('powerText').textContent=p?'ELEC POWERED':'ELEC OFF';$('apuTop').textContent=state.apuAvailable?'APU AVAIL':state.apuStart?'APU STARTING':'APU OFF';
   setRead('bat1read',state.bat1?'ON':'OFF',state.bat1);setRead('bat2read',state.bat2?'ON':'OFF',state.bat2);setRead('extread',state.ext?'ON':'OFF',state.ext);setRead('apuread',state.apuAvailable?'AVAILABLE':state.apuStart?'STARTING':state.apuMaster?'MASTER ON':'OFF',state.apuAvailable);
   const irs=[state.irs1,state.irs2,state.irs3].map(v=>v?'ALIGN':'OFF');$('irsread').textContent=irs.join(' / ');$('irsread').className=irs.some(v=>v==='ALIGN')?'cyan':'amber';
@@ -114,18 +121,21 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
   if(!p)msgs.push(['ELEC POWER NOT AVAILABLE','off']);
   if(state.apuStart)msgs.push(['APU START IN PROGRESS','warn']);
   if(state.apuAvailable)msgs.push(['APU AVAILABLE','']);
+  if(state.apuBleed)msgs.push(['APU BLEED ON','']);
+  msgs.push(['X BLEED · '+state.xfeed,state.xfeed==='SHUT'?'warn':'']);
+  if(state.engMode==='IGN/START')msgs.push(['ENG MODE · IGN/START','warn']);
   if([state.irs1,state.irs2,state.irs3].some(Boolean))msgs.push(['IRS ALIGNMENT IN PROGRESS','warn']);
   if(state.eng1||state.eng2)msgs.push(['ENGINE STATE: SIMULATED RUNNING','']);
   if(!msgs.length)msgs.push(['NO ACTIVE MESSAGES','']);
   $('messages').innerHTML=msgs.map(m=>'<div class="message '+m[1]+'">'+m[0]+'</div>').join('');
-  if(state.ecamPage===1){$('messages').innerHTML='<div class="message '+(p?'':'off')+'">'+(p?'AC BUS · SIMULATED POWER AVAILABLE':'AC BUS · NOT POWERED')+'</div><div class="message '+(state.ext||state.apuAvailable?'':'off')+'">'+(state.ext?'EXT PWR CONNECTED':state.apuAvailable?'APU GENERATOR AVAILABLE':'NO AC SOURCE')+'</div>'}
+  if(state.ecamPage===1){$('messages').innerHTML='<div class="message '+(p?'':'off')+'">'+(p?'AC BUS · SIMULATED POWER AVAILABLE':'AC BUS · NOT POWERED')+'</div><div class="message '+(state.ext||state.apuAvailable?'':'off')+'">'+(state.ext?'EXT PWR CONNECTED':state.apuAvailable?'APU GENERATOR AVAILABLE':'NO AC SOURCE')+'</div><div class="message '+(state.apuBleed?'':'off')+'">APU BLEED · '+(state.apuBleed?'ON':'OFF')+'</div><div class="message '+(state.xfeed==='SHUT'?'warn':'')+'">X FEED · '+state.xfeed+'</div><div class="message '+(state.engMode==='IGN/START'?'warn':'')+'">ENG MODE · '+state.engMode+'</div>'}
   if(state.ecamPage===2){$('messages').innerHTML=['irs1','irs2','irs3'].map((k,i)=>'<div class="message '+(state[k]?'warn':'off')+'">IR '+(i+1)+' · '+(state[k]?'ALIGNING':'OFF')+'</div>').join('')}
  }
  document.querySelectorAll('.control[data-key]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.key)));
  $('reset').addEventListener('click',reset);$('dockToggle').addEventListener('click',()=>{const d=$('dock');d.classList.toggle('collapsed');$('dockToggle').textContent=d.classList.contains('collapsed')?'Show controls +':'Hide controls −'});
  $('ecamToggle').addEventListener('click',()=>$('ecam').classList.toggle('ecam-hidden'));
  $('fullBtn').addEventListener('click',async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){say('FULLSCREEN UNAVAILABLE','Use your browser’s full-screen option if available.')}});
- $('helpBtn').addEventListener('click',()=>say('Prototype controls','These buttons change a small local demo state and update the ECAM panel. They are not physically attached to the 3D cockpit switches yet. Sketchfab runs in a separate embedded viewer.'));
+ $('helpBtn').addEventListener('click',()=>say('Prototype controls','This is a simplified educational demo, not an Airbus procedure trainer. Try BAT 1/2 or EXT PWR → APU MASTER → APU START → wait for APU AVAIL → APU BLEED ON → ENG MODE IGN/START → ENG 1/2. IRS controls display NAV while alignment is simulated. X FEED cycles AUTO → SHUT → OPEN. Controls are not physically attached to the 3D model switches yet; Sketchfab runs in a separate embedded viewer.'));
  render();
 })();
 </script>
