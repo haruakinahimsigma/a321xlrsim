@@ -28,6 +28,16 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 .ecam-hidden{opacity:0;pointer-events:none;transform:translate(12px,-50%)}
 @media(max-width:760px){.topbar{left:8px;right:8px;gap:6px}.brand{padding:7px 9px}.brand strong{font-size:10px}.brand small{font-size:9px}.mark{width:28px;height:28px}.status{gap:7px;padding:8px;font-size:9px}.top-actions{padding:3px}.iconbtn{padding:8px}.hint{top:114px;font-size:10px;max-width:94vw;overflow:hidden;text-overflow:ellipsis}.ecam{top:auto;bottom:165px;right:8px;transform:none;width:min(210px,52vw);max-height:36vh}.ecam-hidden{transform:translateX(12px)}.control-dock{left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom))}.controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px}.control{padding:8px}.control .kicker{margin-bottom:5px}.control strong{font-size:11px}.control .state{font-size:9px}.dock-head{padding:8px 10px}.dock-sub{display:none}.dock-foot{font-size:9px;padding:0 10px 8px}}
 @media(max-height:520px) and (orientation:landscape){.ecam{top:68px;bottom:120px;transform:none;max-height:none}.controls{grid-template-columns:repeat(6,minmax(0,1fr));padding:6px}.control{padding:7px}.control .kicker{margin-bottom:4px}.control-dock{bottom:5px}.dock-head{padding:6px 10px}.dock-foot{padding-bottom:5px}.hint{display:none}}
+
+/* Interactive 3D switch panel overlay. The controls are 3D meshes, not switches
+   physically attached to the Sketchfab cockpit geometry. */
+#switch3d-wrap{position:fixed;z-index:7;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));height:206px;border:1px solid #29404d;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(10,24,34,.97),rgba(4,12,19,.97));box-shadow:0 12px 40px #0009}
+#switch3d-head{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #29404d;font-size:10px;letter-spacing:.13em;font-weight:850}
+#switch3d-head span{color:#91a7b4;font-size:9px;letter-spacing:0;font-weight:500}
+#switch3d{display:block;width:100%;height:calc(100% - 32px);touch-action:pan-y}
+#switch3d-note{position:absolute;right:10px;top:39px;font-size:9px;color:#91a7b4;pointer-events:none;background:#071019aa;padding:4px 6px;border-radius:5px}
+#dock{display:none!important}
+@media(max-width:760px){#switch3d-wrap{left:8px;right:8px;height:190px;bottom:max(8px,env(safe-area-inset-bottom))}#switch3d-head{padding:0 8px;font-size:9px}#switch3d-note{top:36px;font-size:8px;max-width:46%;text-align:right}}
 </style>
 </head>
 <body>
@@ -43,6 +53,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 <div class="hint" id="hint">Camera API loading · use CAPT / CENTER / FO to switch viewpoints</div>
 <nav class="viewbar" aria-label="Cockpit camera presets"><span class="view-label">CAMERA</span><button class="viewbtn active" data-view="CAPT">CAPT</button><button class="viewbtn" data-view="CENTER">CENTER</button><button class="viewbtn" data-view="FO">FO</button><button class="viewbtn" id="saveView">SAVE VIEW</button><button class="viewbtn locked" id="lockView">🔒 LOCKED</button><span class="viewstatus" id="viewStatus">API LOADING…</span></nav>
 <div class="viewcal" id="viewcal">Move the camera to the <b id="calTarget">CENTER</b> seat, then save that view. <button id="calDismiss">Got it</button></div>
+<div id="switch3d-wrap"><div id="switch3d-head">3D SYSTEM SWITCHES <span>CLICK A SWITCH TO OPERATE · SIM LOGIC</span></div><canvas id="switch3d" aria-label="Interactive 3D switch panel"></canvas><div id="switch3d-note">3D controls are an overlay, not attached to the model’s physical switches</div></div>
 <aside class="ecam" id="ecam">
   <div class="panel-head"><span>ECAM · SYSTEM STATUS</span><span class="tag">SIM</span></div>
   <div class="ecam-body">
@@ -202,6 +213,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
  const labels={bat1:'BAT 1',bat2:'BAT 2',ext:'EXT PWR',apuMaster:'APU MASTER',apuStart:'APU START',apuBleed:'APU BLEED',xfeed:'X FEED',engMode:'ENG MODE',irs1:'IRS 1',irs2:'IRS 2',irs3:'IRS 3',eng1:'ENG 1',eng2:'ENG 2',ecamPage:'ECAM PAGE'};
  function setRead(id,value,good){$(id).textContent=value;$(id).className=good?'green':(value==='OFF'||value==='NOT AVAIL'?'amber':'cyan')}
  function render(){
+  window.dispatchEvent(new CustomEvent('a321-render',{detail:state}));
   document.querySelectorAll('.control[data-key]').forEach(btn=>{const k=btn.dataset.key;if(k==='reset')return;const active=typeof state[k]==='boolean'?state[k]:(k==='xfeed'?state.xfeed!=='SHUT':state.engMode==='IGN/START');btn.classList.toggle('on',active);const s=btn.querySelector('.state');if(k==='ext')s.textContent=state.ext?'ON · CONNECTED':'NOT AVAIL';else if(k==='apuStart')s.textContent=state.apuAvailable?'AVAILABLE':state.apuStart?'STARTING…':'STANDBY';else if(k==='apuBleed')s.textContent=state.apuBleed?'ON · AIR SUPPLY':'OFF';else if(k==='xfeed')s.textContent=state.xfeed;else if(k==='engMode')s.textContent=state.engMode;else if(k==='ecamPage')s.textContent=['STATUS','ELEC','ADIRS'][state.ecamPage];else if(k.startsWith('irs'))s.textContent=active?'NAV · ALIGNING':'OFF';else s.textContent=active?'ON':'OFF';});
   const p=powered();$('powerLed').style.background=p?'var(--green)':'var(--red)';$('powerText').textContent=p?'ELEC POWERED':'ELEC OFF';$('apuTop').textContent=state.apuAvailable?'APU AVAIL':state.apuStart?'APU STARTING':'APU OFF';
   setRead('bat1read',state.bat1?'ON':'OFF',state.bat1);setRead('bat2read',state.bat2?'ON':'OFF',state.bat2);setRead('extread',state.ext?'ON':'OFF',state.ext);setRead('apuread',state.apuAvailable?'AVAILABLE':state.apuStart?'STARTING':state.apuMaster?'MASTER ON':'OFF',state.apuAvailable);
@@ -223,12 +235,44 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
   if(state.ecamPage===2){$('messages').innerHTML=['irs1','irs2','irs3'].map((k,i)=>'<div class="message '+(state[k]?'warn':'off')+'">IR '+(i+1)+' · '+(state[k]?'ALIGNING':'OFF')+'</div>').join('')}
  }
  document.querySelectorAll('.control[data-key]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.key)));
+ window.addEventListener('a321-switch',e=>toggle(e.detail));
  $('reset').addEventListener('click',reset);$('dockToggle').addEventListener('click',()=>{const d=$('dock');d.classList.toggle('collapsed');$('dockToggle').textContent=d.classList.contains('collapsed')?'Show controls +':'Hide controls −'});
  $('ecamToggle').addEventListener('click',()=>$('ecam').classList.toggle('ecam-hidden'));
  $('fullBtn').addEventListener('click',async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){say('FULLSCREEN UNAVAILABLE','Use your browser’s full-screen option if available.')}});
  $('helpBtn').addEventListener('click',()=>say('Prototype controls','This is a simplified educational demo, not an Airbus procedure trainer. Try BAT 1/2 or EXT PWR → APU MASTER → APU START → wait for APU AVAIL → APU BLEED ON → ENG MODE IGN/START → ENG 1/2. IRS controls display NAV while alignment is simulated. X FEED cycles AUTO → SHUT → OPEN. Controls are not physically attached to the 3D model switches yet; Sketchfab runs in a separate embedded viewer.'));
  render();
 })();
+</script>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js';
+const canvas=document.getElementById('switch3d'),wrap=document.getElementById('switch3d-wrap');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x071019);
+const camera=new THREE.PerspectiveCamera(36,1,.1,100);camera.position.set(0,5.8,12.5);camera.lookAt(0,0,0);
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
+scene.add(new THREE.HemisphereLight(0x9bdfff,0x14202a,2.1));
+const light=new THREE.DirectionalLight(0xffffff,2.2);light.position.set(-3,8,6);scene.add(light);
+const panel=new THREE.Mesh(new THREE.BoxGeometry(14.2,.32,4.15),new THREE.MeshStandardMaterial({color:0x152632,metalness:.68,roughness:.38}));panel.position.y=-.2;scene.add(panel);
+const trim=new THREE.Mesh(new THREE.BoxGeometry(14.35,.08,4.28),new THREE.MeshStandardMaterial({color:0x426171,metalness:.8,roughness:.3}));trim.position.y=-.39;scene.add(trim);
+const switches=[['bat1','BAT 1'],['bat2','BAT 2'],['ext','EXT PWR'],['apuMaster','APU MASTER'],['apuStart','APU START'],['apuBleed','APU BLEED'],['xfeed','X FEED'],['engMode','ENG MODE'],['irs1','IRS 1'],['irs2','IRS 2'],['irs3','IRS 3'],['eng1','ENG 1'],['eng2','ENG 2'],['ecamPage','ECAM PAGE']];
+const nodes=new Map(),raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+const matOff=new THREE.MeshStandardMaterial({color:0x263b49,metalness:.72,roughness:.3}),matOn=new THREE.MeshStandardMaterial({color:0x45c993,emissive:0x123b2b,metalness:.45,roughness:.28}),matAmber=new THREE.MeshStandardMaterial({color:0xe5a64d,emissive:0x4a2608,metalness:.45,roughness:.28}),knobMat=new THREE.MeshStandardMaterial({color:0x9ab0bd,metalness:.82,roughness:.22});
+function labelTexture(text){const cn=document.createElement('canvas');cn.width=512;cn.height=128;const ctx=cn.getContext('2d');ctx.fillStyle='#bcd1dc';ctx.font='bold 42px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,64);const tex=new THREE.CanvasTexture(cn);tex.colorSpace=THREE.SRGBColorSpace;return tex}
+switches.forEach(([id,label],i)=>{
+ const row=i<7?0:1,col=i%7,x=(col-3)*1.95,z=row===0?-.98:.92;
+ const group=new THREE.Group();group.position.set(x,.02,z);group.userData={id,label};
+ const base=new THREE.Mesh(new THREE.CylinderGeometry(.39,.44,.2,32),new THREE.MeshStandardMaterial({color:0x080e13,metalness:.65,roughness:.35}));base.rotation.x=Math.PI/2;base.position.y=.17;base.userData.switchId=id;group.add(base);
+ const toggle=new THREE.Group();toggle.position.set(0,.31,0);
+ const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.065,.08,.48,12),knobMat);shaft.position.y=.15;shaft.userData.switchId=id;toggle.add(shaft);
+ const tip=new THREE.Mesh(new THREE.SphereGeometry(.15,16,12),matOff);tip.position.y=.4;tip.userData.switchId=id;toggle.add(tip);group.add(toggle);
+ const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(1.62,.36),new THREE.MeshBasicMaterial({map:labelTexture(label),transparent:true,side:THREE.DoubleSide,depthWrite:false}));labelMesh.position.set(0,.03,.66);labelMesh.rotation.x=-.2;group.add(labelMesh);
+ scene.add(group);nodes.set(id,{group,toggle,tip,id,label});
+});
+function resize(){const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;renderer.setSize(rect.width,rect.height,false);camera.aspect=rect.width/rect.height;camera.updateProjectionMatrix();renderer.render(scene,camera)}
+window.addEventListener('resize',resize);if(window.ResizeObserver)new ResizeObserver(resize).observe(wrap);
+canvas.addEventListener('pointerup',e=>{const r=canvas.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(scene.children,true);for(const hit of hits){if(hit.object.userData.switchId){window.dispatchEvent(new CustomEvent('a321-switch',{detail:hit.object.userData.switchId}));break}}});
+window.addEventListener('a321-render',e=>{const s=e.detail||{};nodes.forEach((n,id)=>{const active=typeof s[id]==='boolean'?s[id]:(id==='xfeed'?s.xfeed!=='SHUT':id==='engMode'?s.engMode==='IGN/START':id==='ecamPage'?s.ecamPage>0:false);n.tip.material=active?(id==='xfeed'||id==='engMode'?matAmber:matOn):matOff;n.toggle.rotation.z=active?-.45:.45});renderer.render(scene,camera)});
+function animate(){requestAnimationFrame(animate);renderer.render(scene,camera)}resize();animate();
 </script>
 </body>
 </html>
