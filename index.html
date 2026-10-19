@@ -36,7 +36,11 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 #switch3d-head span{color:#91a7b4;font-size:9px;letter-spacing:0;font-weight:500}
 #switch3d{display:block;width:100%;height:calc(100% - 32px);touch-action:pan-y;pointer-events:none}#switch-hitgrid{position:absolute;left:8px;right:8px;top:38px;bottom:7px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;z-index:2}#switch-hitgrid button{min-width:0;border:1px solid #456171;border-radius:7px;background:#10212dcc;color:#d8eaf2;font-size:clamp(8px,1vw,11px);font-weight:800;padding:3px 2px;box-shadow:inset 0 0 0 1px #07101966}#switch-hitgrid button.on{background:#174331e8;border-color:#55d59b;color:#8dffc0}#switch-hitgrid button:active{transform:scale(.97)}
 #switch3d-note{position:absolute;right:10px;top:39px;font-size:9px;color:#91a7b4;pointer-events:none;background:#071019aa;padding:4px 6px;border-radius:5px}
-#dock{display:none!important}
+#dock{display:block!important;max-height:42vh;overflow:auto}#dock .controls{max-height:28vh;overflow:auto}#switch3d-wrap{display:none!important}
+#mini-ecam{position:fixed;z-index:4;left:12px;top:210px;width:210px;padding:9px 10px;background:rgba(4,12,18,.92);border:1px solid #355363;border-radius:10px;box-shadow:0 8px 28px #0007;backdrop-filter:blur(10px);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.mini-head{display:flex;justify-content:space-between;gap:6px;color:#8ee8ff;font-size:10px;font-weight:800;letter-spacing:.08em;padding-bottom:7px;border-bottom:1px solid #29404d}.mini-head span{color:#91a7b4}.mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:8px}.mini-grid div{background:#09151d;border:1px solid #203744;border-radius:5px;padding:6px}.mini-grid small{display:block;color:#91a7b4;font-size:9px}.mini-grid b{display:block;color:#a5ffc6;font-size:15px;margin-top:2px}.mini-note{color:#7e97a5;font-size:8px;margin-top:7px}
+@media(max-width:760px){#mini-ecam{left:8px;top:155px;width:150px;padding:6px}.mini-head{font-size:8px}.mini-grid{gap:4px;padding-top:5px}.mini-grid div{padding:4px}.mini-grid small{font-size:7px}.mini-grid b{font-size:12px}.mini-note{font-size:7px}}
+
 @media(max-width:760px){#switch3d-wrap{left:8px;right:8px;height:190px;bottom:max(8px,env(safe-area-inset-bottom))}#switch3d-head{padding:0 8px;font-size:9px}#switch3d-note{top:36px;font-size:8px;max-width:46%;text-align:right}}
 </style>
 </head>
@@ -54,6 +58,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 <nav class="viewbar" aria-label="Cockpit camera presets"><span class="view-label">CAMERA</span><button class="viewbtn active" data-view="CAPT">CAPT</button><button class="viewbtn" data-view="CENTER">CENTER</button><button class="viewbtn" data-view="FO">FO</button><button class="viewbtn" id="saveView">SAVE VIEW</button><button class="viewbtn locked" id="lockView">🔒 LOCKED</button><span class="viewstatus" id="viewStatus">API LOADING…</span></nav>
 <div class="viewcal" id="viewcal">Move the camera to the <b id="calTarget">CENTER</b> seat, then save that view. <button id="calDismiss">Got it</button></div>
 <div id="switch3d-wrap"><div id="switch3d-head">3D SYSTEM SWITCHES <span>CLICK A SWITCH TO OPERATE · SIM LOGIC</span></div><canvas id="switch3d" aria-label="Interactive 3D switch panel"></canvas><div id="switch-hitgrid" aria-label="Clickable system switches"></div><div id="switch3d-note">3D controls are an overlay, not attached to the model’s physical switches</div></div>
+<aside id="mini-ecam" aria-label="Mini ECAM engine indications"><div class="mini-head">ECAM · ENGINE / APU <span>SIM</span></div><div class="mini-grid"><div><small>APU N</small><b id="mini-apu-n">0%</b></div><div><small>ENG 1 N2</small><b id="mini-eng1-n2">0%</b></div><div><small>ENG 2 N2</small><b id="mini-eng2-n2">0%</b></div><div><small>ELEC</small><b id="mini-elec">OFF</b></div><div><small>APU GEN</small><b id="mini-apu-gen">OFF</b></div><div><small>BLEED</small><b id="mini-bleed">OFF</b></div></div><div class="mini-note">Illustrative values only · not aircraft data</div></aside>
 <aside class="ecam" id="ecam">
   <div class="panel-head"><span>ECAM · SYSTEM STATUS</span><span class="tag">SIM</span></div>
   <div class="ecam-body">
@@ -85,6 +90,19 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
     <button class="control" id="eng1" data-key="eng1"><span class="kicker">ENGINE</span><strong>ENG 1 START</strong><span class="state">OFF</span></button>
     <button class="control" id="eng2" data-key="eng2"><span class="kicker">ENGINE</span><strong>ENG 2 START</strong><span class="state">OFF</span></button>
     <button class="control" id="ecamPage" data-key="ecamPage"><span class="kicker">DISPLAY</span><strong>ECAM PAGE</strong><span class="state">STATUS</span></button>
+    <button class="control" id="fuelPump1" data-key="fuelPump1"><span class="kicker">FUEL</span><strong>FUEL PUMP 1</strong><span class="state">OFF</span></button>
+    <button class="control" id="fuelPump2" data-key="fuelPump2"><span class="kicker">FUEL</span><strong>FUEL PUMP 2</strong><span class="state">OFF</span></button>
+    <button class="control" id="pack1" data-key="pack1"><span class="kicker">AIR COND</span><strong>PACK 1</strong><span class="state">OFF</span></button>
+    <button class="control" id="pack2" data-key="pack2"><span class="kicker">AIR COND</span><strong>PACK 2</strong><span class="state">OFF</span></button>
+    <button class="control" id="hydGreen" data-key="hydGreen"><span class="kicker">HYDRAULICS</span><strong>GREEN ELEC PUMP</strong><span class="state">OFF</span></button>
+    <button class="control" id="hydYellow" data-key="hydYellow"><span class="kicker">HYDRAULICS</span><strong>YELLOW ELEC PUMP</strong><span class="state">OFF</span></button>
+    <button class="control" id="beacon" data-key="beacon"><span class="kicker">EXTERIOR LIGHTS</span><strong>BEACON</strong><span class="state">OFF</span></button>
+    <button class="control" id="navLights" data-key="navLights"><span class="kicker">EXTERIOR LIGHTS</span><strong>NAV & LOGO</strong><span class="state">OFF</span></button>
+    <button class="control" id="landingLights" data-key="landingLights"><span class="kicker">EXTERIOR LIGHTS</span><strong>LANDING LIGHTS</strong><span class="state">OFF</span></button>
+    <button class="control" id="seatBelts" data-key="seatBelts"><span class="kicker">SIGNS</span><strong>SEAT BELTS</strong><span class="state">OFF</span></button>
+    <button class="control" id="noSmoking" data-key="noSmoking"><span class="kicker">SIGNS</span><strong>NO SMOKING</strong><span class="state">OFF</span></button>
+    <button class="control" id="antiIce" data-key="antiIce"><span class="kicker">ANTI-ICE</span><strong>ENG ANTI-ICE</strong><span class="state">OFF</span></button>
+    <button class="control" id="wipers" data-key="wipers"><span class="kicker">WINDSHIELD</span><strong>WIPERS</strong><span class="state">OFF</span></button>
     <button class="control" id="reset" data-key="reset"><span class="kicker">SIMULATION</span><strong>RESET</strong><span class="state">COLD & DARK</span></button>
   </div>
   <div class="dock-foot"><span>Prototype only · not for real-world flight training</span><button class="reset" id="helpBtn">How this works</button></div>
@@ -181,7 +199,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
  const apiScript=document.querySelector('script[src*="sketchfab-viewer-1.12.1.js"]');
  if(apiScript)apiScript.addEventListener('error',fallbackViewer);
 
- const state={bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,apuBleed:false,xfeed:"AUTO",engMode:"NORM",irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0};
+ const state={bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,apuBleed:false,xfeed:"AUTO",engMode:"NORM",irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0,fuelPump1:false,fuelPump2:false,pack1:false,pack2:false,hydGreen:false,hydYellow:false,beacon:false,navLights:false,landingLights:false,seatBelts:false,noSmoking:false,antiIce:false,wipers:false};
  let alignTimer=null,apuTimer=null,noticeTimer=null;
  function powered(){return state.bat1||state.bat2||state.ext||state.apuAvailable}
  function say(title,msg){$('noticeTitle').textContent=title;$('noticeText').textContent=msg;$('notice').classList.add('show');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('notice').classList.remove('show'),3600)}
@@ -209,8 +227,8 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
   }
   render();
  }
- function reset(){Object.assign(state,{bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,apuBleed:false,xfeed:"AUTO",engMode:"NORM",irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0});clearTimeout(apuTimer);clearTimeout(alignTimer);render();say('COLD & DARK','Simulation reset to its initial state.')}
- const labels={bat1:'BAT 1',bat2:'BAT 2',ext:'EXT PWR',apuMaster:'APU MASTER',apuStart:'APU START',apuBleed:'APU BLEED',xfeed:'X FEED',engMode:'ENG MODE',irs1:'IRS 1',irs2:'IRS 2',irs3:'IRS 3',eng1:'ENG 1',eng2:'ENG 2',ecamPage:'ECAM PAGE'};
+ function reset(){Object.assign(state,{bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,apuBleed:false,xfeed:"AUTO",engMode:"NORM",irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0,fuelPump1:false,fuelPump2:false,pack1:false,pack2:false,hydGreen:false,hydYellow:false,beacon:false,navLights:false,landingLights:false,seatBelts:false,noSmoking:false,antiIce:false,wipers:false});clearTimeout(apuTimer);clearTimeout(alignTimer);render();say('COLD & DARK','Simulation reset to its initial state.')}
+ const labels={bat1:'BAT 1',bat2:'BAT 2',ext:'EXT PWR',apuMaster:'APU MASTER',apuStart:'APU START',apuBleed:'APU BLEED',xfeed:'X FEED',engMode:'ENG MODE',irs1:'IRS 1',irs2:'IRS 2',irs3:'IRS 3',eng1:'ENG 1',eng2:'ENG 2',ecamPage:'ECAM PAGE',fuelPump1:'FUEL PUMP 1',fuelPump2:'FUEL PUMP 2',pack1:'PACK 1',pack2:'PACK 2',hydGreen:'GREEN ELEC PUMP',hydYellow:'YELLOW ELEC PUMP',beacon:'BEACON',navLights:'NAV & LOGO',landingLights:'LANDING LIGHTS',seatBelts:'SEAT BELTS',noSmoking:'NO SMOKING',antiIce:'ENG ANTI-ICE',wipers:'WIPERS'};
  function setRead(id,value,good){$(id).textContent=value;$(id).className=good?'green':(value==='OFF'||value==='NOT AVAIL'?'amber':'cyan')}
  function render(){
   window.dispatchEvent(new CustomEvent('a321-render',{detail:state}));
@@ -220,6 +238,10 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
   const irs=[state.irs1,state.irs2,state.irs3].map(v=>v?'ALIGN':'OFF');$('irsread').textContent=irs.join(' / ');$('irsread').className=irs.some(v=>v==='ALIGN')?'cyan':'amber';
   $('engread').textContent=(state.eng1?'ON':'OFF')+' / '+(state.eng2?'ON':'OFF');$('engread').className=(state.eng1||state.eng2)?'green':'amber';
   $('ecamTitle').textContent=['ELEC / STATUS','ELECTRICAL','ADIRS'][state.ecamPage];
+  $('mini-apu-n').textContent=state.apuAvailable?'100%':state.apuStart?'45%':state.apuMaster?'0%':'0%';
+  $('mini-eng1-n2').textContent=state.eng1?'58%':'0%';$('mini-eng2-n2').textContent=state.eng2?'58%':'0%';
+  $('mini-elec').textContent=p?'ON':'OFF';$('mini-apu-gen').textContent=state.apuAvailable?'ON':'OFF';$('mini-bleed').textContent=state.apuBleed?'ON':'OFF';
+  $('mini-eng1-n2').style.color=state.eng1?'#a5ffc6':'#ffc66d';$('mini-eng2-n2').style.color=state.eng2?'#a5ffc6':'#ffc66d';
   let msgs=[];
   if(!p)msgs.push(['ELEC POWER NOT AVAILABLE','off']);
   if(state.apuStart)msgs.push(['APU START IN PROGRESS','warn']);
