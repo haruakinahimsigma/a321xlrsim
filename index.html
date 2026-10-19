@@ -34,7 +34,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 #switch3d-wrap{position:fixed;z-index:7;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));height:206px;border:1px solid #29404d;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(10,24,34,.97),rgba(4,12,19,.97));box-shadow:0 12px 40px #0009}
 #switch3d-head{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #29404d;font-size:10px;letter-spacing:.13em;font-weight:850}
 #switch3d-head span{color:#91a7b4;font-size:9px;letter-spacing:0;font-weight:500}
-#switch3d{display:block;width:100%;height:calc(100% - 32px);touch-action:pan-y}
+#switch3d{display:block;width:100%;height:calc(100% - 32px);touch-action:pan-y;pointer-events:none}#switch-hitgrid{position:absolute;left:8px;right:8px;top:38px;bottom:7px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;z-index:2}#switch-hitgrid button{min-width:0;border:1px solid #456171;border-radius:7px;background:#10212dcc;color:#d8eaf2;font-size:clamp(8px,1vw,11px);font-weight:800;padding:3px 2px;box-shadow:inset 0 0 0 1px #07101966}#switch-hitgrid button.on{background:#174331e8;border-color:#55d59b;color:#8dffc0}#switch-hitgrid button:active{transform:scale(.97)}
 #switch3d-note{position:absolute;right:10px;top:39px;font-size:9px;color:#91a7b4;pointer-events:none;background:#071019aa;padding:4px 6px;border-radius:5px}
 #dock{display:none!important}
 @media(max-width:760px){#switch3d-wrap{left:8px;right:8px;height:190px;bottom:max(8px,env(safe-area-inset-bottom))}#switch3d-head{padding:0 8px;font-size:9px}#switch3d-note{top:36px;font-size:8px;max-width:46%;text-align:right}}
@@ -53,7 +53,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
 <div class="hint" id="hint">Camera API loading · use CAPT / CENTER / FO to switch viewpoints</div>
 <nav class="viewbar" aria-label="Cockpit camera presets"><span class="view-label">CAMERA</span><button class="viewbtn active" data-view="CAPT">CAPT</button><button class="viewbtn" data-view="CENTER">CENTER</button><button class="viewbtn" data-view="FO">FO</button><button class="viewbtn" id="saveView">SAVE VIEW</button><button class="viewbtn locked" id="lockView">🔒 LOCKED</button><span class="viewstatus" id="viewStatus">API LOADING…</span></nav>
 <div class="viewcal" id="viewcal">Move the camera to the <b id="calTarget">CENTER</b> seat, then save that view. <button id="calDismiss">Got it</button></div>
-<div id="switch3d-wrap"><div id="switch3d-head">3D SYSTEM SWITCHES <span>CLICK A SWITCH TO OPERATE · SIM LOGIC</span></div><canvas id="switch3d" aria-label="Interactive 3D switch panel"></canvas><div id="switch3d-note">3D controls are an overlay, not attached to the model’s physical switches</div></div>
+<div id="switch3d-wrap"><div id="switch3d-head">3D SYSTEM SWITCHES <span>CLICK A SWITCH TO OPERATE · SIM LOGIC</span></div><canvas id="switch3d" aria-label="Interactive 3D switch panel"></canvas><div id="switch-hitgrid" aria-label="Clickable system switches"></div><div id="switch3d-note">3D controls are an overlay, not attached to the model’s physical switches</div></div>
 <aside class="ecam" id="ecam">
   <div class="panel-head"><span>ECAM · SYSTEM STATUS</span><span class="tag">SIM</span></div>
   <div class="ecam-body">
@@ -236,6 +236,11 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
  }
  document.querySelectorAll('.control[data-key]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.key)));
  window.addEventListener('a321-switch',e=>toggle(e.detail));
+ const hitGrid=$('switch-hitgrid');
+ Object.entries(labels).forEach(([key,label])=>{const b=document.createElement('button');b.type='button';b.dataset.switch=key;b.textContent=label;b.addEventListener('click',()=>toggle(key));hitGrid.appendChild(b)});
+ function syncHitGrid(){hitGrid.querySelectorAll('button').forEach(b=>{const k=b.dataset.switch;const active=typeof state[k]==='boolean'?state[k]:(k==='xfeed'?state.xfeed!=='SHUT':k==='engMode'?state.engMode==='IGN/START':k==='ecamPage'?state.ecamPage>0:false);b.classList.toggle('on',active);b.setAttribute('aria-pressed',String(active))})}
+ const oldRender=render;
+ render=function(){oldRender();syncHitGrid()};
  $('reset').addEventListener('click',reset);$('dockToggle').addEventListener('click',()=>{const d=$('dock');d.classList.toggle('collapsed');$('dockToggle').textContent=d.classList.contains('collapsed')?'Show controls +':'Hide controls −'});
  $('ecamToggle').addEventListener('click',()=>$('ecam').classList.toggle('ecam-hidden'));
  $('fullBtn').addEventListener('click',async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){say('FULLSCREEN UNAVAILABLE','Use your browser’s full-screen option if available.')}});
