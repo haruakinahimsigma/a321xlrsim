@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#071019">
+<title>A321XLR Systems Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#071019;--panel:rgba(7,16,25,.94);--line:#29404d;--cyan:#73e5ff;--green:#74f0a1;--amber:#ffc66d;--red:#ff7373;--muted:#91a7b4}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:#e8f4fa;font:14px/1.4 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+#viewer{position:fixed;inset:0;background:#111}#viewer iframe{width:100%;height:100%;border:0;display:block}
+.scrim{pointer-events:none;position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,8,14,.72),transparent 19%,transparent 65%,rgba(2,8,14,.58));}
+.topbar{position:fixed;z-index:5;left:12px;right:12px;top:env(safe-area-inset-top,10px);display:flex;align-items:center;gap:10px;pointer-events:none}
+.brand,.status,.top-actions{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);border-radius:12px;box-shadow:0 8px 28px #0005}
+.brand{padding:10px 13px;display:flex;align-items:center;gap:10px;min-width:0}.mark{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:#102c3a;color:var(--cyan);font-weight:900}.brand strong{display:block;letter-spacing:.12em;font-size:12px}.brand small{color:var(--muted);font-size:11px}.status{margin-left:auto;display:flex;align-items:center;gap:12px;padding:10px 12px;font-size:11px;white-space:nowrap}.led{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:5px}.top-actions{pointer-events:auto;display:flex;gap:5px;padding:5px}.iconbtn{border:0;background:#142531;border-radius:8px;padding:9px 11px}
+.hint{position:fixed;z-index:4;left:50%;top:88px;transform:translateX(-50%);background:#071019bf;border:1px solid #ffffff20;border-radius:99px;padding:7px 12px;color:#d4e7ef;font-size:11px;white-space:nowrap;pointer-events:none}
+.ecam{position:fixed;z-index:4;right:12px;top:50%;transform:translateY(-50%);width:min(270px,30vw);max-height:58vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:0 12px 38px #0007;backdrop-filter:blur(14px);transition:transform .22s,opacity .22s}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.13em;font-weight:800}.tag{font-size:9px;color:var(--cyan);border:1px solid #3d899b;border-radius:5px;padding:3px 5px}
+.ecam-body{padding:12px}.ecam-title{color:var(--cyan);font-size:11px;letter-spacing:.1em;margin-bottom:10px}.message{padding:8px 9px;margin:6px 0;border-left:3px solid var(--green);background:#11231f;border-radius:4px;font-size:12px}.message.warn{border-color:var(--amber);background:#2b2114}.message.off{border-color:#60717c;background:#15202a;color:#9db0bb}.readout{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #ffffff0c;font-size:12px}.readout span:first-child{color:var(--muted)}.readout b{font-weight:700;text-align:right}.green{color:var(--green)}.amber{color:var(--amber)}.cyan{color:var(--cyan)}
+.control-dock{position:fixed;z-index:6;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));border:1px solid var(--line);border-radius:15px;background:var(--panel);backdrop-filter:blur(18px);box-shadow:0 12px 40px #0008;overflow:hidden;transition:transform .22s}
+.dock-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border-bottom:1px solid var(--line)}.dock-title{font-size:11px;font-weight:850;letter-spacing:.13em}.dock-sub{color:var(--muted);font-size:10px;margin-left:9px}.dock-head button{border:1px solid var(--line);background:#142531;border-radius:7px;padding:6px 9px;font-size:11px}
+.controls{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:9px;padding:11px}.control{min-width:0;background:#0b1822;border:1px solid #29404d;border-radius:10px;padding:10px;text-align:left;transition:border-color .15s,background .15s}.control:active{transform:translateY(1px)}.control .kicker{font-size:9px;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:8px}.control strong{font-size:12px;display:block}.control .state{font-size:10px;display:block;margin-top:6px;color:var(--amber)}.control.on{border-color:#3b8e70;background:#10251f}.control.on .state{color:var(--green)}.control:disabled{opacity:.38;cursor:not-allowed}
+.dock-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px 10px;color:var(--muted);font-size:10px}.reset{border:0;background:transparent;color:#b4c8d3;text-decoration:underline;padding:4px}
+#notice{position:fixed;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%);background:#0a1722;border:1px solid #3b6170;border-radius:12px;padding:16px 18px;max-width:min(360px,90vw);box-shadow:0 20px 60px #0009;display:none}#notice.show{display:block}#notice strong{display:block;margin-bottom:5px;color:var(--cyan)}#notice p{margin:0;color:#b5c8d2;font-size:12px}
+.collapsed .controls,.collapsed .dock-foot{display:none}.collapsed .dock-head{border:0}
+.ecam-hidden{opacity:0;pointer-events:none;transform:translate(12px,-50%)}
+@media(max-width:760px){.topbar{left:8px;right:8px;gap:6px}.brand{padding:7px 9px}.brand strong{font-size:10px}.brand small{font-size:9px}.mark{width:28px;height:28px}.status{gap:7px;padding:8px;font-size:9px}.top-actions{padding:3px}.iconbtn{padding:8px}.hint{top:72px;font-size:10px;max-width:94vw;overflow:hidden;text-overflow:ellipsis}.ecam{top:auto;bottom:165px;right:8px;transform:none;width:min(210px,52vw);max-height:36vh}.ecam-hidden{transform:translateX(12px)}.control-dock{left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom))}.controls{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px}.control{padding:8px}.control .kicker{margin-bottom:5px}.control strong{font-size:11px}.control .state{font-size:9px}.dock-head{padding:8px 10px}.dock-sub{display:none}.dock-foot{font-size:9px;padding:0 10px 8px}}
+@media(max-height:520px) and (orientation:landscape){.ecam{top:68px;bottom:120px;transform:none;max-height:none}.controls{grid-template-columns:repeat(6,minmax(0,1fr));padding:6px}.control{padding:7px}.control .kicker{margin-bottom:4px}.control-dock{bottom:5px}.dock-head{padding:6px 10px}.dock-foot{padding-bottom:5px}.hint{display:none}}
+</style>
+</head>
+<body>
+<div id="viewer">
+<iframe id="sketchfab" title="Airbus A320 cockpit 3D model by AirStudios on Sketchfab" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" src="https://sketchfab.com/models/feaa475ce5824121be0380a42987007f/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark=1&ui_hint=0&ui_controls=1&ui_stop=0&ui_inspector=0"></iframe>
+</div>
+<div class="scrim"></div>
+<header class="topbar">
+  <div class="brand"><div class="mark">A3</div><div><strong>A321XLR SYSTEMS LAB</strong><small>INTERACTIVE COCKPIT PROTOTYPE</small></div></div>
+  <div class="status"><span><i class="led" id="powerLed"></i><span id="powerText">ELEC OFF</span></span><span id="apuTop">APU OFF</span></div>
+  <div class="top-actions"><button class="iconbtn" id="ecamToggle" aria-label="Toggle ECAM panel">ECAM</button><button class="iconbtn" id="fullBtn" aria-label="Toggle fullscreen">⛶</button></div>
+</header>
+<div class="hint">Drag to look around · pinch / scroll to zoom · use the system controls below</div>
+<aside class="ecam" id="ecam">
+  <div class="panel-head"><span>ECAM · SYSTEM STATUS</span><span class="tag">SIM</span></div>
+  <div class="ecam-body">
+    <div class="ecam-title" id="ecamTitle">ELEC / DOOR</div>
+    <div id="messages"><div class="message off">ELEC POWER NOT AVAILABLE</div></div>
+    <div style="height:10px"></div>
+    <div class="readout"><span>BAT 1</span><b id="bat1read" class="amber">OFF</b></div>
+    <div class="readout"><span>BAT 2</span><b id="bat2read" class="amber">OFF</b></div>
+    <div class="readout"><span>EXT PWR</span><b id="extread" class="amber">OFF</b></div>
+    <div class="readout"><span>APU</span><b id="apuread" class="amber">OFF</b></div>
+    <div class="readout"><span>IRS 1 / 2 / 3</span><b id="irsread" class="amber">OFF / OFF / OFF</b></div>
+    <div class="readout"><span>ENG 1 / 2</span><b id="engread" class="amber">OFF / OFF</b></div>
+  </div>
+</aside>
+<section class="control-dock" id="dock" aria-label="Simulated aircraft controls">
+  <div class="dock-head"><div><span class="dock-title">SYSTEM CONTROLS</span><span class="dock-sub">TAP TO TOGGLE · SIMPLIFIED LOGIC</span></div><button id="dockToggle">Hide controls −</button></div>
+  <div class="controls">
+    <button class="control" id="bat1" data-key="bat1"><span class="kicker">ELECTRICAL</span><strong>BAT 1</strong><span class="state">OFF</span></button>
+    <button class="control" id="bat2" data-key="bat2"><span class="kicker">ELECTRICAL</span><strong>BAT 2</strong><span class="state">OFF</span></button>
+    <button class="control" id="ext" data-key="ext"><span class="kicker">GROUND POWER</span><strong>EXT PWR</strong><span class="state">NOT AVAIL</span></button>
+    <button class="control" id="apuMaster" data-key="apuMaster"><span class="kicker">AUX POWER</span><strong>APU MASTER</strong><span class="state">OFF</span></button>
+    <button class="control" id="apuStart" data-key="apuStart"><span class="kicker">AUX POWER</span><strong>APU START</strong><span class="state">STANDBY</span></button>
+    <button class="control" id="irs1" data-key="irs1"><span class="kicker">ADIRS</span><strong>IRS 1</strong><span class="state">OFF</span></button>
+    <button class="control" id="irs2" data-key="irs2"><span class="kicker">ADIRS</span><strong>IRS 2</strong><span class="state">OFF</span></button>
+    <button class="control" id="irs3" data-key="irs3"><span class="kicker">ADIRS</span><strong>IRS 3</strong><span class="state">OFF</span></button>
+    <button class="control" id="eng1" data-key="eng1"><span class="kicker">ENGINE</span><strong>ENG 1 START</strong><span class="state">OFF</span></button>
+    <button class="control" id="eng2" data-key="eng2"><span class="kicker">ENGINE</span><strong>ENG 2 START</strong><span class="state">OFF</span></button>
+    <button class="control" id="ecamPage" data-key="ecamPage"><span class="kicker">DISPLAY</span><strong>ECAM PAGE</strong><span class="state">STATUS</span></button>
+    <button class="control" id="reset" data-key="reset"><span class="kicker">SIMULATION</span><strong>RESET</strong><span class="state">COLD & DARK</span></button>
+  </div>
+  <div class="dock-foot"><span>Prototype only · not for real-world flight training</span><button class="reset" id="helpBtn">How this works</button></div>
+</section>
+<div id="notice"><strong id="noticeTitle">Prototype note</strong><p id="noticeText"></p></div>
+<script>
+(function(){
+ const state={bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0};
+ let alignTimer=null,apuTimer=null,noticeTimer=null;
+ const $=id=>document.getElementById(id);
+ function powered(){return state.bat1||state.bat2||state.ext||state.apuAvailable}
+ function say(title,msg){$('noticeTitle').textContent=title;$('noticeText').textContent=msg;$('notice').classList.add('show');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('notice').classList.remove('show'),3600)}
+ function toggle(key){
+  if(key==='reset'){reset();return}
+  if(key==='ecamPage'){state.ecamPage=(state.ecamPage+1)%3;render();return}
+  if(key==='apuStart'){
+   if(!state.apuMaster){say('APU START INHIBITED','Switch APU MASTER on first. This is a simplified educational simulation.');return}
+   if(!powered()){say('ELECTRICAL POWER REQUIRED','Enable a battery or external power first.');return}
+   if(state.apuAvailable){say('APU','APU is already available.');return}
+   state.apuStart=true;render();clearTimeout(apuTimer);apuTimer=setTimeout(()=>{state.apuAvailable=true;state.apuStart=false;render();say('APU AVAILABLE','Simulated APU start complete.');},3200);render();return;
+  }
+  if(key.startsWith('irs')&&!powered()){say('ADIRS NOT POWERED','Enable electrical power before switching on the IRS units.');return}
+  if(key.startsWith('eng')&&!powered()&&!state.apuAvailable){say('ENGINE START INHIBITED','Enable electrical power first. This prototype does not model real engine-start conditions.');return}
+  if(key==='ext'&&!powered()&&!state.bat1&&!state.bat2){state.ext=!state.ext;render();return}
+  state[key]=!state[key];
+  if(key==='apuMaster'&&!state.apuMaster){state.apuStart=false;state.apuAvailable=false;clearTimeout(apuTimer)}
+  if(key.startsWith('irs')){
+   clearTimeout(alignTimer);
+   if(state.irs1||state.irs2||state.irs3){alignTimer=setTimeout(()=>{say('ADIRS','Alignment time elapsed in the simplified demo.');},5000)}
+  }
+  render();
+ }
+ function reset(){Object.assign(state,{bat1:false,bat2:false,ext:false,apuMaster:false,apuStart:false,apuAvailable:false,irs1:false,irs2:false,irs3:false,eng1:false,eng2:false,ecamPage:0});clearTimeout(apuTimer);clearTimeout(alignTimer);render();say('COLD & DARK','Simulation reset to its initial state.')}
+ const labels={bat1:'BAT 1',bat2:'BAT 2',ext:'EXT PWR',apuMaster:'APU MASTER',apuStart:'APU START',irs1:'IRS 1',irs2:'IRS 2',irs3:'IRS 3',eng1:'ENG 1',eng2:'ENG 2',ecamPage:'ECAM PAGE'};
+ function setRead(id,value,good){$(id).textContent=value;$(id).className=good?'green':(value==='OFF'||value==='NOT AVAIL'?'amber':'cyan')}
+ function render(){
+  document.querySelectorAll('.control[data-key]').forEach(btn=>{const k=btn.dataset.key;if(k==='reset')return;const active=!!state[k];btn.classList.toggle('on',active);const s=btn.querySelector('.state');if(k==='ext')s.textContent=state.ext?'ON · CONNECTED':'NOT AVAIL';else if(k==='apuStart')s.textContent=state.apuAvailable?'AVAILABLE':state.apuStart?'STARTING…':'STANDBY';else if(k==='ecamPage')s.textContent=['STATUS','ELEC','ADIRS'][state.ecamPage];else s.textContent=active?'ON':'OFF';});
+  const p=powered();$('powerLed').style.background=p?'var(--green)':'var(--red)';$('powerText').textContent=p?'ELEC POWERED':'ELEC OFF';$('apuTop').textContent=state.apuAvailable?'APU AVAIL':state.apuStart?'APU STARTING':'APU OFF';
+  setRead('bat1read',state.bat1?'ON':'OFF',state.bat1);setRead('bat2read',state.bat2?'ON':'OFF',state.bat2);setRead('extread',state.ext?'ON':'OFF',state.ext);setRead('apuread',state.apuAvailable?'AVAILABLE':state.apuStart?'STARTING':state.apuMaster?'MASTER ON':'OFF',state.apuAvailable);
+  const irs=[state.irs1,state.irs2,state.irs3].map(v=>v?'ALIGN':'OFF');$('irsread').textContent=irs.join(' / ');$('irsread').className=irs.some(v=>v==='ALIGN')?'cyan':'amber';
+  $('engread').textContent=(state.eng1?'ON':'OFF')+' / '+(state.eng2?'ON':'OFF');$('engread').className=(state.eng1||state.eng2)?'green':'amber';
+  $('ecamTitle').textContent=['ELEC / STATUS','ELECTRICAL','ADIRS'][state.ecamPage];
+  let msgs=[];
+  if(!p)msgs.push(['ELEC POWER NOT AVAILABLE','off']);
+  if(state.apuStart)msgs.push(['APU START IN PROGRESS','warn']);
+  if(state.apuAvailable)msgs.push(['APU AVAILABLE','']);
+  if([state.irs1,state.irs2,state.irs3].some(Boolean))msgs.push(['IRS ALIGNMENT IN PROGRESS','warn']);
+  if(state.eng1||state.eng2)msgs.push(['ENGINE STATE: SIMULATED RUNNING','']);
+  if(!msgs.length)msgs.push(['NO ACTIVE MESSAGES','']);
+  $('messages').innerHTML=msgs.map(m=>'<div class="message '+m[1]+'">'+m[0]+'</div>').join('');
+  if(state.ecamPage===1){$('messages').innerHTML='<div class="message '+(p?'':'off')+'">'+(p?'AC BUS · SIMULATED POWER AVAILABLE':'AC BUS · NOT POWERED')+'</div><div class="message '+(state.ext||state.apuAvailable?'':'off')+'">'+(state.ext?'EXT PWR CONNECTED':state.apuAvailable?'APU GENERATOR AVAILABLE':'NO AC SOURCE')+'</div>'}
+  if(state.ecamPage===2){$('messages').innerHTML=['irs1','irs2','irs3'].map((k,i)=>'<div class="message '+(state[k]?'warn':'off')+'">IR '+(i+1)+' · '+(state[k]?'ALIGNING':'OFF')+'</div>').join('')}
+ }
+ document.querySelectorAll('.control[data-key]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.key)));
+ $('reset').addEventListener('click',reset);$('dockToggle').addEventListener('click',()=>{const d=$('dock');d.classList.toggle('collapsed');$('dockToggle').textContent=d.classList.contains('collapsed')?'Show controls +':'Hide controls −'});
+ $('ecamToggle').addEventListener('click',()=>$('ecam').classList.toggle('ecam-hidden'));
+ $('fullBtn').addEventListener('click',async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(e){say('FULLSCREEN UNAVAILABLE','Use your browser’s full-screen option if available.')}});
+ $('helpBtn').addEventListener('click',()=>say('Prototype controls','These buttons change a small local demo state and update the ECAM panel. They are not physically attached to the 3D cockpit switches yet. Sketchfab runs in a separate embedded viewer.'));
+ render();
+})();
+</script>
+</body>
+</html>
