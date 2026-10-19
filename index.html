@@ -208,6 +208,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}butto
   if(key==='ecamPage'){state.ecamPage=(state.ecamPage+1)%3;render();return}
   if(key==='xfeed'){state.xfeed=state.xfeed==='AUTO'?'SHUT':state.xfeed==='SHUT'?'OPEN':'AUTO';render();return}
   if(key==='engMode'){state.engMode=state.engMode==='NORM'?'IGN/START':'NORM';render();return}
+  if(['fuelPump1','fuelPump2','pack1','pack2','hydGreen','hydYellow','beacon','navLights','landingLights','seatBelts','noSmoking','antiIce','wipers'].includes(key)&&!powered()){say('ELECTRICAL POWER REQUIRED','This simulated system needs electrical power before it can be switched on.');return}
+  if((key==='pack1'||key==='pack2')&&!state.apuAvailable&&!state.eng1&&!state.eng2){say('PACK NOT AVAILABLE','In this demo, a pack needs the simulated APU or an engine running.');return}
+  if(key==='antiIce'&&!state.eng1&&!state.eng2){say('ANTI-ICE INHIBITED','This demo only allows engine anti-ice when an engine is simulated running.');return}
   if(key==='apuBleed'){if(!state.apuAvailable){say('APU BLEED INHIBITED','The APU must be available before its bleed air can be selected in this simplified model.');return}state.apuBleed=!state.apuBleed;render();return}
   if(key==='apuStart'){
    if(!state.apuMaster){say('APU START INHIBITED','Switch APU MASTER on first. This is a simplified educational simulation.');return}
